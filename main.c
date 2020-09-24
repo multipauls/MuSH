@@ -31,7 +31,6 @@ int shell=STDERR_FILENO;
 
 
 
-
 void printkill(int sig){
 	pid_t myid;
 	myid=getpid();
@@ -43,7 +42,11 @@ void printkill(int sig){
 	}
 }
 
-
+void stphandler(int sig){
+	pid_t myid;
+	myid=getpid();
+	kill(myid, SIGSTOP);
+}
 
 void execute(char **tokens, int i){
 	int bg=0,wpid=0,pid=0, endlist, status;
@@ -73,11 +76,7 @@ void execute(char **tokens, int i){
 
   else if(pid == 0){
   	signal(SIGINT, SIG_DFL);
-  	//printf("I am child" );
-  	//setpgid(0,0);
-  	int selfpid=getpid();
-  	//printf("%d", selfpid);
-    //printf("%d\n", bg);
+  	//signal(SIGTSTP, stphandler);
 
     if(execvp(tokens[0],arglist) == -1)
       {
@@ -87,7 +86,7 @@ void execute(char **tokens, int i){
    	printf("%d", getpgrp());
   }   
   else {
-  		
+  	
   		if (bg == 0)
         {	//printf("%d\n",pid );
           //setpgid(pid, 0);
@@ -117,7 +116,7 @@ void execute(char **tokens, int i){
 void printexit(){
 	int pid;
 	int status;
-	pid=waitpid(-1, &status, WNOHANG);
+	pid=waitpid(-1, &status, WNOHANG|WUNTRACED);
 	if (pid<=0){
 		return;
 	}
@@ -146,6 +145,8 @@ int main(int argc,char* argv[]){
 	getcwd(home, sizeof(home));
 	signal(SIGCHLD, printexit);
 	signal(SIGQUIT, printkill);
+	signal(SIGINT, SIG_IGN);
+    //signal(SIGTSTP, SIG_IGN);
 	progid= getpid();
 
 
@@ -177,7 +178,7 @@ int main(int argc,char* argv[]){
 		lineptr=fgets(incommand, sizeof(incommand), stdin);
 		if (lineptr == NULL)
     		break;
-    	signal(SIGINT, SIG_IGN);
+
 		strcpy(command,incommand);
 		tokens[0] = strtok(incommand, " \n\t");
 		int i =0, j=0;
@@ -239,6 +240,9 @@ int main(int argc,char* argv[]){
 		else if (strcmp(tokens[0], "overkill")==0){
 			signal(SIGQUIT, SIG_IGN);
 			kill(-progid, SIGQUIT);
+		}
+		else if (strcmp(tokens[0], "quit")==0){
+			break;
 		}
 		else{
 
