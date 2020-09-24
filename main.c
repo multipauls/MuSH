@@ -14,9 +14,7 @@
 #include<sys/wait.h>
 #include <assert.h> 
 #include "shell.h"
-//#include "ls.h"
-//#include "echo.h"
-//#include "cd.h"
+
 
 struct bgprog {
 	char *prog;
@@ -29,8 +27,9 @@ char cwd[1024];
 struct bgprog bglist[1000];
 int bgctr=0;
 pid_t progid, curpid;
+int shell=STDERR_FILENO;
 
-void siginthandler(int sig){
+void intHandler(int sig){
 
 }
 
@@ -77,15 +76,16 @@ void execute(char **tokens, int i){
   else if(pid == 0){
   	//printf("I am child" );
   	setpgid(0,0);
-  	int selfpid=getpid();
-  	printf("%d", selfpid);
+  	//int selfpid=getpid();
+  	//printf("%d", selfpid);
+    printf("%d\n", bg);
     if (bg==1){
     	//snprintf(bglist[bgctr].prog,1023,"%s", tokens[0]);
     	//printf("here1\n" );
     	//bglist[bgctr].bgpid=selfpid;
     	//printf("%s %d %d", bglist[bgctr].prog,bglist[bgctr].bgpid, bgctr);
     	//printf("%d %d", bglist[bgctr].bgpid, bgctr);
-    	//printf("here2" );
+    	printf("here2" );
     	//printf(" %d\n",bgctr);
     	//printf("here3\n" );
     	//bgctr++;
@@ -95,7 +95,7 @@ void execute(char **tokens, int i){
         printf("Execution failed '%s'\n",tokens[0]);
         return;
       }
-   
+   	printf("%d", getpgrp());
   }   
   else {
   		if (bg == 0)
@@ -177,6 +177,7 @@ int main(int argc,char* argv[]){
 		lineptr=fgets(incommand, sizeof(incommand), stdin);
 		if (lineptr == NULL)
     		break;
+    	//signal(SIGINT, intHandler);
 		strcpy(command,incommand);
 		tokens[0] = strtok(incommand, " \n\t");
 		int i =0, j=0;
@@ -244,7 +245,7 @@ int main(int argc,char* argv[]){
 			execute(tokens,i);
 
 		}
-
+		printf("%d", getpgrp());
 		
 	}
 
