@@ -17,3 +17,5 @@ int cd(char ** command, char home[1024], char cwd[1024]);
 int echo(char ** command);
 int lsdo( char* tokens,int a, int l);
 int ls (char* tokens[1024], int i, char*home);
+void setenvfunc(char **tokens, int i);
+void unsetenvfunc(char **tokens, int i);

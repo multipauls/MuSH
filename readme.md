@@ -19,6 +19,10 @@
 ## echo.c
 - echo: Print arguments (called by main)
 
+## env.c
+- setenvfunc: Sets environment variable (called by main)
+- unsetenvfunc: Unsets environment variable (called by main)
+
 ## shell.h
 - Contains all the function prototypes
 
