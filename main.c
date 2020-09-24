@@ -150,6 +150,8 @@ int main(int argc,char* argv[]){
 
 
 	while (1){
+		
+
 		getcwd(cwd, sizeof(cwd));
 		//printf("%s %ld %ld\n", cwd, strlen(cwd), strlen(home));
 
@@ -170,7 +172,11 @@ int main(int argc,char* argv[]){
 			}
 			printf("> " );
 		}
-		fgets(incommand, sizeof(incommand), stdin);
+		
+		char *lineptr;
+		lineptr=fgets(incommand, sizeof(incommand), stdin);
+		if (lineptr == NULL)
+    		break;
 		strcpy(command,incommand);
 		tokens[0] = strtok(incommand, " \n\t");
 		int i =0, j=0;
