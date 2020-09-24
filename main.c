@@ -24,14 +24,12 @@ struct bgprog {
 
 char home[1024];
 char cwd[1024];
-struct bgprog bglist[1000];
+struct bgprog bglist[1024];
 int bgctr=0;
 pid_t progid, curpid;
 int shell=STDERR_FILENO;
 
-void intHandler(int sig){
 
-}
 
 
 void printkill(int sig){
@@ -74,22 +72,13 @@ void execute(char **tokens, int i){
 
 
   else if(pid == 0){
+  	signal(SIGINT, SIG_DFL);
   	//printf("I am child" );
-  	setpgid(0,0);
-  	//int selfpid=getpid();
+  	//setpgid(0,0);
+  	int selfpid=getpid();
   	//printf("%d", selfpid);
-    printf("%d\n", bg);
-    if (bg==1){
-    	//snprintf(bglist[bgctr].prog,1023,"%s", tokens[0]);
-    	//printf("here1\n" );
-    	//bglist[bgctr].bgpid=selfpid;
-    	//printf("%s %d %d", bglist[bgctr].prog,bglist[bgctr].bgpid, bgctr);
-    	//printf("%d %d", bglist[bgctr].bgpid, bgctr);
-    	printf("here2" );
-    	//printf(" %d\n",bgctr);
-    	//printf("here3\n" );
-    	//bgctr++;
-    }
+    //printf("%d\n", bg);
+
     if(execvp(tokens[0],arglist) == -1)
       {
         printf("Execution failed '%s'\n",tokens[0]);
@@ -98,9 +87,11 @@ void execute(char **tokens, int i){
    	printf("%d", getpgrp());
   }   
   else {
+  		
   		if (bg == 0)
         {	//printf("%d\n",pid );
-          setpgid(pid, 0);
+          //setpgid(pid, 0);
+    	
           wpid = waitpid(pid, &status, WUNTRACED);
           //printf("%d parent\n",wpid );
           while (!WIFEXITED(status) && !WIFSIGNALED(status))
@@ -109,8 +100,17 @@ void execute(char **tokens, int i){
             }
           }
         else{
-        	//printf("here1\n" );
+        printf("pid %d\n", pid);
+        //snprintf(bglist[bgctr].prog,1023,"%s", tokens[0]);
+    	//printf("here1\n" );
+    	//bglist[bgctr].prog=tokens[0];
+    	//printf("%d %d", bglist[bgctr].bgpid, bgctr);
+    	//printf("here2" );
+    	printf(" %d\n",bgctr);
+    	//printf("here3\n" );
+    	bgctr++;
         }
+
   }
 }
 
@@ -177,7 +177,7 @@ int main(int argc,char* argv[]){
 		lineptr=fgets(incommand, sizeof(incommand), stdin);
 		if (lineptr == NULL)
     		break;
-    	//signal(SIGINT, intHandler);
+    	signal(SIGINT, SIG_IGN);
 		strcpy(command,incommand);
 		tokens[0] = strtok(incommand, " \n\t");
 		int i =0, j=0;
