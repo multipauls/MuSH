@@ -238,8 +238,8 @@ int main(int argc,char* argv[]){
 		}
 
 		else if (strcmp(tokens[0], "overkill")==0){
-			signal(SIGQUIT, SIG_IGN);
-			kill(-progid, SIGQUIT);
+			
+			killpg(getpgrp(), SIGINT);
 		}
 		else if (strcmp(tokens[0], "quit")==0){
 			break;
@@ -252,6 +252,5 @@ int main(int argc,char* argv[]){
 		printf("%d", getpgrp());
 		
 	}
-
 return 0;
 }
