@@ -30,6 +30,7 @@ pid_t progid, curpid;
 int shell=STDERR_FILENO;
 
 
+/*
 
 void printkill(int sig){
 	pid_t myid;
@@ -41,11 +42,15 @@ void printkill(int sig){
 	
 	}
 }
-
+*/
 void stphandler(int sig){
 	pid_t myid;
 	myid=getpid();
-	kill(myid, SIGSTOP);
+	printf(" %d %d\n",myid, progid );
+	//printf("Comes here\n");
+	//signal(SIGTSTP, SIG_DFL);
+	if (myid != progid)
+		printf("%d\n",kill(myid, SIGSTOP));
 }
 
 void execute(char **tokens, int i){
@@ -76,7 +81,8 @@ void execute(char **tokens, int i){
 
   else if(pid == 0){
   	signal(SIGINT, SIG_DFL);
-  	//signal(SIGTSTP, stphandler);
+  	signal(SIGTSTP, stphandler);
+  	
 
     if(execvp(tokens[0],arglist) == -1)
       {
@@ -90,10 +96,10 @@ void execute(char **tokens, int i){
   		if (bg == 0)
         {	//printf("%d\n",pid );
           //setpgid(pid, 0);
-    	
+    	//if(setpgid(pid, pid) == 0) perror("setpid");
           wpid = waitpid(pid, &status, WUNTRACED);
           //printf("%d parent\n",wpid );
-          while (!WIFEXITED(status) && !WIFSIGNALED(status))
+          while (!WIFEXITED(status) && !WIFSIGNALED(status) && !WIFSTOPPED(status))
             {
               wpid = waitpid(pid, &status, WUNTRACED);
             }
@@ -144,9 +150,11 @@ int main(int argc,char* argv[]){
 	getlogin_r(username, LOGIN_NAME_MAX);
 	getcwd(home, sizeof(home));
 	signal(SIGCHLD, printexit);
-	signal(SIGQUIT, printkill);
+	//signal(SIGQUIT, printkill);
 	signal(SIGINT, SIG_IGN);
-    //signal(SIGTSTP, SIG_IGN);
+    signal(SIGTSTP, SIG_IGN);
+    
+    //signal(SIGTSTP, stphandler);
 	progid= getpid();
 
 
