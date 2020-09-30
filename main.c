@@ -32,7 +32,7 @@ void kjob(char **tokens, int i){
 		printf("Error, incorrect number of tokens" );
 		return;
 	}
-	jobid=atoi(tokens[1]);
+	jobid=atoi(tokens[1])-1;
 	sig=atoi(tokens[2]);
 	printf("%d %d\n",bgctr, jobid );
 	if (bgctr-1<jobid){
@@ -91,7 +91,8 @@ void jobs(){
 
 void bg(char **tokens, int i){
 	char pathstr[1024];
-	sprintf(pathstr, "/proc/%d", bglist[i]);
+	int ind = atoi(tokens[1])-1;
+	sprintf(pathstr, "/proc/%d", bglist[ind]);
 	struct stat mystat;
 	{
 		
@@ -106,7 +107,7 @@ void bg(char **tokens, int i){
 		
 	}
 	else{
-		int pid=atoi(tokens[1]);
+		int pid=bglist[ind];
 		int val=kill(pid, SIGCONT);
 		if (val!=0){
 			perror("kill");
@@ -118,7 +119,8 @@ void bg(char **tokens, int i){
 
 void fg(char **tokens, int i){
 	char pathstr[1024];
-	sprintf(pathstr, "/proc/%d", bglist[i]);
+	int ind = atoi(tokens[1])-1;
+	sprintf(pathstr, "/proc/%d", bglist[ind]);
 	struct stat mystat;
 	if (i!=2){
 		printf("Error in number of arguments\n");
@@ -129,7 +131,7 @@ void fg(char **tokens, int i){
 			return;
 	}
 	else{
-		int pid = atoi(tokens[1]), status;
+		int pid = bglist[ind], status;
 		int wpid = waitpid(pid, &status, WUNTRACED);
           //printf("%d parent\n",wpid );
           while (!WIFEXITED(status) && !WIFSIGNALED(status) && !WIFSTOPPED(status))
