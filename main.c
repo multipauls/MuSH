@@ -16,33 +16,129 @@
 #include "shell.h"
 
 
-struct bgprog {
-	char *prog;
-	int bgpid;
-};
+
 
 
 char home[1024];
 char cwd[1024];
-struct bgprog bglist[1024];
+int bglist[1024];
 int bgctr=0;
 pid_t progid, curpid;
 int shell=STDERR_FILENO;
 
-
-/*
-
-void printkill(int sig){
-	pid_t myid;
-	myid=getpid();
-	printf("%d %d\n", myid, progid);
-	//assert(sig == SIGQUIT);
-	if (progid != myid) {
-	printf("Exiting %d\n",myid );
-	
+void kjob(char **tokens, int i){
+	int pid, sig, jobid;
+	if (i!=3){
+		printf("Error, incorrect number of tokens" );
+		return;
+	}
+	jobid=atoi(tokens[1]);
+	sig=atoi(tokens[2]);
+	printf("%d %d\n",bgctr, jobid );
+	if (bgctr-1<jobid){
+		printf("Error, no job found" );
+		return;
+	}
+	if (sig>31 || sig <1){
+		printf("Error, no job found" );
+		return;
+	}
+	pid=bglist[jobid];
+	int val=kill(pid, sig);
+	if (val!=0){
+		perror("kill");
 	}
 }
-*/
+
+void jobs(){
+	for (int i=0; i<bgctr; i++){
+		struct stat mystat;
+		char pathstr[1024], cmdline[100], cmdfile[1024], *cmdl, statf[1024], status[256];
+		sprintf(pathstr, "/proc/%d", bglist[i]);
+		if (stat(pathstr,&mystat)==0){
+			sprintf(cmdfile, "/proc/%d/comm", bglist[i]);
+			FILE* cmd = fopen( cmdfile, "r" );
+			fgets(cmdline, 100, cmd);
+			char line[256];
+			char runstat;
+			int ctr=0;
+			sprintf(statf, "/proc/%d/status", bglist[i]);
+			FILE* status = fopen( statf, "r" );
+			while (fgets(line, 256, status) != NULL){
+				if (ctr==2){
+					runstat= (char)line[7];
+					break;
+				}
+				ctr++;
+			}
+			char runname[20];
+			printf("%c\n",runstat );
+			//printf("%d\n",strcmp(runstat,"S") );
+			if (runstat=='R'||runstat=='S'||runstat=='Z'){
+				sprintf(runname,"Running");
+			}
+			else if (runstat=='D'){
+				sprintf(runname,"Waiting");
+			}
+			else{
+				sprintf(runname,"Stopped");
+			}
+			cmdl= strtok(cmdline, " \n");
+			printf("[%d] %s %s [%d]\n",i+1,runname,cmdl,bglist[i] );
+		}
+	}	
+}
+
+void bg(char **tokens, int i){
+	char pathstr[1024];
+	sprintf(pathstr, "/proc/%d", bglist[i]);
+	struct stat mystat;
+	{
+		
+	};
+	if (i!=2){
+		printf("Error in number of arguments\n");
+		return;
+	}
+	else if (stat(pathstr,&mystat)!=0){
+			printf("No job found\n");
+			return;
+		
+	}
+	else{
+		int pid=atoi(tokens[1]);
+		int val=kill(pid, SIGCONT);
+		if (val!=0){
+			perror("kill");
+		}
+	}
+}
+
+
+
+void fg(char **tokens, int i){
+	char pathstr[1024];
+	sprintf(pathstr, "/proc/%d", bglist[i]);
+	struct stat mystat;
+	if (i!=2){
+		printf("Error in number of arguments\n");
+		return;
+	}
+	else if (stat(pathstr,&mystat)!=0){
+			printf("No job found\n");
+			return;
+	}
+	else{
+		int pid = atoi(tokens[1]), status;
+		int wpid = waitpid(pid, &status, WUNTRACED);
+          //printf("%d parent\n",wpid );
+          while (!WIFEXITED(status) && !WIFSIGNALED(status) && !WIFSTOPPED(status))
+            {
+              wpid = waitpid(pid, &status, WUNTRACED);
+            }
+	}
+}
+
 void stphandler(int sig){
 	pid_t myid;
 	myid=getpid();
@@ -50,6 +146,9 @@ void stphandler(int sig){
 	//printf("Comes here\n");
 	//signal(SIGTSTP, SIG_DFL);
 	if (myid != progid)
+		//bglist[bgctr]=myid;    	
+    	//printf("%d\n",bglist[bgctr] );
+    	//bgctr++;
 		printf("%d\n",kill(myid, SIGSTOP));
 }
 
@@ -103,16 +202,15 @@ void execute(char **tokens, int i){
             {
               wpid = waitpid(pid, &status, WUNTRACED);
             }
-          }
+        }
         else{
-        printf("pid %d\n", pid);
-        //snprintf(bglist[bgctr].prog,1023,"%s", tokens[0]);
-    	//printf("here1\n" );
-    	//bglist[bgctr].prog=tokens[0];
-    	//printf("%d %d", bglist[bgctr].bgpid, bgctr);
-    	//printf("here2" );
-    	printf(" %d\n",bgctr);
+        //printf("pid %d\n", pid);
+
+    	//printf(" %d\n",bgctr);
+    	bglist[bgctr]=pid;
     	//printf("here3\n" );
+    	
+    	printf("%d\n",bglist[bgctr] );
     	bgctr++;
         }
 
@@ -146,6 +244,7 @@ int main(int argc,char* argv[]){
 	char *tokens[1024];
 	int pipelist[1024];
 	int index;
+	int *pipes[2];
 	gethostname(hostname, HOST_NAME_MAX);
 	getlogin_r(username, LOGIN_NAME_MAX);
 	getcwd(home, sizeof(home));
@@ -197,68 +296,66 @@ int main(int argc,char* argv[]){
 				
 
 		}
-		int k=0;
-		while (k<i){
-			if (strcmp(tokens[k],"|")==0){
-				//printf("here\n");
-				pipelist[j]=k;
-				
-				printf("%d %d \n",k, j );
-				j++;
-				}
 
-			k++;
-		}
-		
-		if (i==0){
-		}
-		else if (strcmp(tokens[0],"cd")==0){
-			cd(tokens, home, cwd);
+			if (i==0){}			
+			else if (strcmp(tokens[0],"cd")==0){
+				cd(tokens, home, cwd);
 
-		}
-		else if (strcmp(tokens[0],"echo")==0){
-			echo(tokens);
-		}
-		else if (strcmp(tokens[0],"pwd")==0){
-			char val[1024];
-			getcwd(val, sizeof(val));
-			printf("%s\n", val );
-		}
-		else if (strcmp(tokens[0],"ls")==0){
-			//if (i==1)
-			//	i++;
-			//sprintf(tokens[1],".");
-			ls(tokens,i, home);
-			//lsdo(tokens[1], 0, 0);
-			//printf("%d",i );
-		}
-		else if (strcmp(tokens[0],"pinfo")==0){
+			}
+			else if (strcmp(tokens[0],"echo")==0){
+				echo(tokens);
+			}
+			else if (strcmp(tokens[0],"pwd")==0){
+				char val[1024];
+				getcwd(val, sizeof(val));
+				printf("%s\n", val );
+			}
+			else if (strcmp(tokens[0],"ls")==0){
 
-			pinfo(tokens, argv[0]);
-		}
-
-		else if (strcmp(tokens[0], "setenv")==0){
-			setenvfunc(tokens, i);
-		}
-
-		else if (strcmp(tokens[0], "unsetenv")==0){
-			unsetenvfunc(tokens, i);
-		}
-
-		else if (strcmp(tokens[0], "overkill")==0){
+				ls(tokens,i, home);
 			
-			killpg(getpgrp(), SIGINT);
-		}
-		else if (strcmp(tokens[0], "quit")==0){
-			break;
-		}
-		else{
+			}
+			else if (strcmp(tokens[0],"pinfo")==0){
 
-			execute(tokens,i);
+				pinfo(tokens, argv[0]);
+			}
 
-		}
-		printf("%d", getpgrp());
+			else if (strcmp(tokens[0], "setenv")==0){
+				setenvfunc(tokens, i);
+			}
+
+			else if (strcmp(tokens[0], "unsetenv")==0){
+				unsetenvfunc(tokens, i);
+			}
+
+			else if (strcmp(tokens[0], "overkill")==0){
+				
+				killpg(getpgrp(), SIGINT);
+			}
+			else if (strcmp(tokens[0], "kjob")==0){
+				kjob(tokens, i);
+			}
+			else if (strcmp(tokens[0], "jobs")==0){
+				jobs();
+			}
+			else if (strcmp(tokens[0], "bg")==0){
+				bg(tokens, i);
+			}
+			else if (strcmp(tokens[0], "fg")==0){
+				fg(tokens, i);
+			}
+			else if (strcmp(tokens[0], "quit")==0){
+				break;
+			}
+
+			else{
+
+				execute(tokens,i);
+
+			}
 		
+		printf("%d", getpgrp());
+		//freopen ("/dev/tty", "a", stdout);
 	}
 return 0;
 }

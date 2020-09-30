@@ -1,0 +1,23 @@
+ shell.h
+ shell
+ readme.md
+ pinfo.c
+ output.txt
+ makefile
+ main.c
+ ls.c
+ env.c
+ echo.c
+ cd.c
+1456114561 shell.h
+ shell
+ readme.md
+ pinfo.c
+ output.txt
+ makefile
+ main.c
+ ls.c
+ env.c
+ echo.c
+ cd.c
+14664
